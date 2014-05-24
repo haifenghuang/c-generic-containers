@@ -1,4 +1,4 @@
-NAME = liblinked_list.so
+NAME = libcontainers.so
 
 CC = gcc
 RM = rm -f
@@ -11,7 +11,16 @@ OBJ = $(SRC:.c=.o)
 
 all: $(NAME)
 
-CFLAGS = -Wall -Wextra -Werror -ansi -pedantic -iquote include/ -fPIC -g
+DEBUG = no
+
+CFLAGS = -Wall -Wextra -Werror -ansi -pedantic
+CFLAGS += -Wold-style-definition -Wcast-qual -Wlogical-op
+CFLAGS += -iquote include/ -fPIC
+ifeq ($(DEBUG),yes)
+	CFLAGS += -g -DDEBUG
+else
+	CFLAGS += -O2 -DNDEBUG
+endif
 
 LDFLAGS = -shared
 
