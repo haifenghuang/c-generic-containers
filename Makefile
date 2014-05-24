@@ -5,7 +5,7 @@ RM = rm -f
 LD = gcc
 
 SRCDIR = src/
-SRC = $(SRCDIR)linked_list.c
+SRC = $(SRCDIR)list.c
 
 OBJ = $(SRC:.c=.o)
 
