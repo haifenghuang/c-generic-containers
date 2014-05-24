@@ -60,6 +60,166 @@ list_append(list_t *list, void const *data)
 }
 
 static int
+list_prepend(list_t *list, void const *data)
+{
+  list_element_t *element;
+  list_header_t *header;
+
+  print_debug("Entering list::prepend");
+  if ((element = malloc(sizeof(*element))) == NULL)
+    {
+      print_debug("Cannot allocate memory for element, return -1");
+      return -1;
+    }
+  if ((element->data = malloc(list->_node_size)) == NULL)
+    {
+      free(element);
+      print_debug("Cannot allocate memory for data, return -1");
+      return -1;
+    }
+  memcpy(element->data, data, list->_node_size);
+  if ((element->_header = malloc(sizeof(*element->_header))) == NULL)
+    {
+      free(element);
+      free(element->data);
+      print_debug("Cannot allocate memory for header, return -1");
+      return -1;
+    }
+  header = element->_header;
+  header->next = list->begin;
+  header->prev = NULL;
+  header->list = list;
+  if (list->begin)
+    {
+      list->begin->_header->prev = element;
+    }
+  list->begin = element;
+  if (!list->end)
+    {
+      list->end = element;
+    }
+  list->length++;
+  print_debug("Exiting list::prepend, return 0");
+  return 0;
+}
+
+static size_t
+list_find(list_t *list, void const *el, generic_comparator_f comparator)
+{
+  list_element_t *element;
+  size_t i = 0;
+
+  print_debug("Entering list::remove");
+  element = list->begin;
+  while (element)
+    {
+      if (comparator(element->data, el) == 0)
+	{
+	  print_debug("Exiting list::remove, return index");
+	  return i;
+	}
+      element = element->_header->next;
+      ++i;
+    }
+  print_debug("No element found, return -1");
+  return -1;
+}
+
+static void
+_list_free_element(list_element_t *element)
+{
+  if (element->_header->list->_deleter)
+    {
+      element->_header->list->_deleter(element);
+    }
+  free(element->data);
+  free(element->_header);
+  free(element);
+}
+
+static int
+list_remove(list_t *list, void const *el, generic_comparator_f comparator)
+{
+  list_element_t *element;
+
+  print_debug("Entering list::remove");
+  element = list->begin;
+  while (element)
+    {
+      if (comparator(element->data, el) == 0)
+	{
+	  if (element->_header->prev)
+	    {
+	      element->_header->prev->_header->next = element->_header->next;
+	    }
+	  else
+	    {
+	      list->begin = element->_header->next;
+	    }
+	  if (element->_header->next)
+	    {
+	      element->_header->next->_header->prev = element->_header->prev;
+	    }
+	  else
+	    {
+	      list->end = element->_header->prev;
+	    }
+	  _list_free_element(element);
+	  list->length--;
+	  print_debug("Exiting list::remove, return 0");
+	  return 0;
+	}
+      element = element->_header->next;
+    }
+  print_debug("No element found, return -1");
+  return -1;
+}
+
+static int
+list_remove_at(list_t *list, size_t index)
+{
+  list_element_t *element;
+  size_t i = -1;
+
+  print_debug("Entering list::remove_at");
+  if (index >= list->length)
+    {
+      print_debug("Index out of bound, return -1");
+      return -1;
+    }
+  element = list->begin;
+  while (element)
+    {
+      if (++i == index)
+	{
+	  if (element->_header->prev)
+	    {
+	      element->_header->prev->_header->next = element->_header->next;
+	    }
+	  else
+	    {
+	      list->begin = element->_header->next;
+	    }
+	  if (element->_header->next)
+	    {
+	      element->_header->next->_header->prev = element->_header->prev;
+	    }
+	  else
+	    {
+	      list->end = element->_header->prev;
+	    }
+	  _list_free_element(element);
+	  list->length--;
+	  print_debug("Exiting list::remove_at, return 0");
+	  return 0;
+	}
+      element = element->_header->next;
+    }
+  print_debug("Something went wrong, return -1");
+  return -1;
+}
+
+static int
 list_foreach(list_t *list, list_iterator_f iterator)
 {
   list_element_t *el;
@@ -157,6 +317,10 @@ list_create(size_t node_size)
   list->register_deleter = list_register_deleter;
   list->unregister_deleter = list_unregister_deleter;
   list->sort = list_sort;
+  list->prepend = list_prepend;
+  list->remove = list_remove;
+  list->remove_at = list_remove_at;
+  list->find = list_find;
   print_debug("Exiting list constructor, return list");
   return list;
 }
@@ -172,13 +336,7 @@ list_delete(list_t *list)
   while (element)
     {
       next = element->_header->next;
-      if (list->_deleter)
-	{
-	  list->_deleter(element->data);
-	}
-      free(element->data);
-      free(element->_header);
-      free(element);
+      _list_free_element(element);
       element = next;
     }
   free(list);

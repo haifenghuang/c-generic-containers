@@ -28,6 +28,10 @@ typedef int (*_list_foreach_f)(list_t *, list_iterator_f);
 typedef int (*_list_register_deleter_f)(list_t *, generic_deleter_f);
 typedef int (*_list_unregister_deleter_f)(list_t *);
 typedef void (*_list_sort_f)(list_t *, generic_comparator_f);
+typedef int (*_list_prepend_f)(list_t *, void const *);
+typedef int (*_list_remove_f)(list_t *, void const *, generic_comparator_f);
+typedef int (*_list_remove_at_f)(list_t *, size_t);
+typedef size_t (*_list_find_f)(list_t *list, void const *el, generic_comparator_f comparator);
 
 struct _list_s
 {
@@ -41,6 +45,10 @@ struct _list_s
   _list_register_deleter_f register_deleter;
   _list_unregister_deleter_f unregister_deleter;
   _list_sort_f sort;
+  _list_prepend_f prepend;
+  _list_remove_f remove;
+  _list_remove_at_f remove_at;
+  _list_find_f find;
 };
 
 # define new_list(x) list_create(sizeof(x))
