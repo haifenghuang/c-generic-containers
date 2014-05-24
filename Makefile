@@ -1,4 +1,5 @@
 NAME = libcontainers.so
+TEST = test.out
 
 CC = gcc
 RM = rm -f
@@ -7,9 +8,10 @@ LD = gcc
 SRCDIR = src/
 SRC = $(SRCDIR)list.c
 
-OBJ = $(SRC:.c=.o)
+SRCTEST = tests/test.c
+OBJTEST = $(SRCTEST:.c=.o)
 
-all: $(NAME)
+OBJ = $(SRC:.c=.o)
 
 DEBUG = no
 
@@ -23,6 +25,19 @@ else
 endif
 
 LDFLAGS = -shared
+
+LDFLAGSTEST = -L. -lcontainers
+
+all: $(NAME)
+
+test: $(TEST)
+
+fulltest: re test
+
+$(TEST): $(OBJTEST)
+	$(RM) $(TEST)
+	$(CC) -o $@ $^ $(LDFLAGSTEST)
+	LD_LIBRARY_PATH=. ./$(TEST)
 
 $(NAME): $(OBJ)
 	$(LD) -o $@ $^ $(LDFLAGS)
@@ -38,5 +53,5 @@ mrproper: clean
 
 re: mrproper all
 
-.PHONY: all clean mrproper re
+.PHONY: all clean mrproper re test $(TEST)
 .SUFFIXES:
