@@ -6,7 +6,12 @@ RM = rm -f
 LD = gcc
 
 SRCDIR = src/
-SRC = $(SRCDIR)list.c
+SRC = $(SRCDIR)list.c \
+	  $(SRCDIR)stack.c \
+	  $(SRCDIR)listeners.c \
+	  $(SRCDIR)array.c \
+	  $(SRCDIR)map.c \
+	  $(SRCDIR)ring_buffer.c
 
 SRCTEST = tests/test.c
 OBJTEST = $(SRCTEST:.c=.o)
