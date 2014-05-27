@@ -2,7 +2,7 @@
 #include "../include/containers.h"
 
 int
-iterator(size_t i, void *el, list_t *list)
+iterator(size_t i, void *el, list list)
 {
   int *element = el;
 
@@ -20,13 +20,14 @@ comparator(void const *i1, void const *i2)
 int
 main (void)
 {
-  list_t *l;
+  list l;
   int i; 
 
   if ((l = new_list(int)) == NULL)
     {
       return 1;
     }
+  l->register_comparator(l, comparator);
   i = 0;
   l->append(l, &i);
   i = 5;
@@ -37,9 +38,9 @@ main (void)
   l->append(l, &i);
   i = 16;
   l->append(l, &i);
-  l->sort(l, &comparator);
+  l->sort(l);
   i = 5;
-  l->remove(l, &i, comparator);
+  l->remove(l, &i);
   i = 3;
   l->append(l, &i);
   l->remove_at(l, l->length - 1);
@@ -47,9 +48,9 @@ main (void)
   l->prepend(l, &i);
   l->foreach(l, &iterator);
   i = 12;
-  printf("Index of 12 : %li\n", l->find(l, &i, &comparator));
+  printf("Index of 12 : %li\n", l->find(l, &i));
   i = 14;
-  printf("Index of 14 : %li\n", l->find(l, &i, &comparator));
+  printf("Index of 14 : %li\n", l->find(l, &i));
   delete_list(l);
   return 0;
 }

@@ -43,16 +43,16 @@ list_append(list_t *list, void const *data)
     }
   header = element->_header;
   header->next = NULL;
-  header->prev = list->end;
+  header->prev = list->_end;
   header->list = list;
-  if (list->end)
+  if (list->_end)
     {
-      list->end->_header->next = element;
+      list->_end->_header->next = element;
     }
-  list->end = element;
-  if (!list->begin)
+  list->_end = element;
+  if (!list->_begin)
     {
-      list->begin = element;
+      list->_begin = element;
     }
   list->length++;
   print_debug("Exiting list::append, return 0");
@@ -86,17 +86,17 @@ list_prepend(list_t *list, void const *data)
       return -1;
     }
   header = element->_header;
-  header->next = list->begin;
+  header->next = list->_begin;
   header->prev = NULL;
   header->list = list;
-  if (list->begin)
+  if (list->_begin)
     {
-      list->begin->_header->prev = element;
+      list->_begin->_header->prev = element;
     }
-  list->begin = element;
-  if (!list->end)
+  list->_begin = element;
+  if (!list->_end)
     {
-      list->end = element;
+      list->_end = element;
     }
   list->length++;
   print_debug("Exiting list::prepend, return 0");
@@ -104,16 +104,16 @@ list_prepend(list_t *list, void const *data)
 }
 
 static size_t
-list_find(list_t *list, void const *el, generic_comparator_f comparator)
+list_find(list_t *list, void const *el)
 {
   list_element_t *element;
   size_t i = 0;
 
   print_debug("Entering list::remove");
-  element = list->begin;
+  element = list->_begin;
   while (element)
     {
-      if (comparator(element->data, el) == 0)
+      if (list->_comparator(element->data, el) == 0)
 	{
 	  print_debug("Exiting list::remove, return index");
 	  return i;
@@ -138,15 +138,15 @@ _list_free_element(list_element_t *element)
 }
 
 static int
-list_remove(list_t *list, void const *el, generic_comparator_f comparator)
+list_remove(list_t *list, void const *el)
 {
   list_element_t *element;
 
   print_debug("Entering list::remove");
-  element = list->begin;
+  element = list->_begin;
   while (element)
     {
-      if (comparator(element->data, el) == 0)
+      if (list->_comparator(element->data, el) == 0)
 	{
 	  if (element->_header->prev)
 	    {
@@ -154,7 +154,7 @@ list_remove(list_t *list, void const *el, generic_comparator_f comparator)
 	    }
 	  else
 	    {
-	      list->begin = element->_header->next;
+	      list->_begin = element->_header->next;
 	    }
 	  if (element->_header->next)
 	    {
@@ -162,7 +162,7 @@ list_remove(list_t *list, void const *el, generic_comparator_f comparator)
 	    }
 	  else
 	    {
-	      list->end = element->_header->prev;
+	      list->_end = element->_header->prev;
 	    }
 	  _list_free_element(element);
 	  list->length--;
@@ -187,7 +187,7 @@ list_remove_at(list_t *list, size_t index)
       print_debug("Index out of bound, return -1");
       return -1;
     }
-  element = list->begin;
+  element = list->_begin;
   while (element)
     {
       if (++i == index)
@@ -198,7 +198,7 @@ list_remove_at(list_t *list, size_t index)
 	    }
 	  else
 	    {
-	      list->begin = element->_header->next;
+	      list->_begin = element->_header->next;
 	    }
 	  if (element->_header->next)
 	    {
@@ -206,7 +206,7 @@ list_remove_at(list_t *list, size_t index)
 	    }
 	  else
 	    {
-	      list->end = element->_header->prev;
+	      list->_end = element->_header->prev;
 	    }
 	  _list_free_element(element);
 	  list->length--;
@@ -226,7 +226,7 @@ list_foreach(list_t *list, list_iterator_f iterator)
   size_t i;
 
   print_debug("Entering list::foreach");
-  el = list->begin;
+  el = list->_begin;
   i = 0;
   while (el)
     {
@@ -270,23 +270,51 @@ list_unregister_deleter(list_t *list)
   return 0;
 }
 
+static int
+list_register_comparator(list_t *list, generic_comparator_f comparator)
+{
+  print_debug("Entering list::register_comparator");
+  if (list->_comparator != NULL)
+    {
+      print_debug("Cannot register deleter, return -1");
+      return -1;
+    }
+  list->_comparator = comparator;
+  print_debug("Exiting list::register_comparator, return 0");
+  return 0;
+}
+
+static int
+list_unregister_comparator(list_t *list)
+{
+  print_debug("Entering list::unregister_comparator");
+  if (list->_comparator == NULL)
+    {
+      print_debug("No comparator registered, return -1");
+      return -1;
+    }
+  list->_comparator = NULL;
+  print_debug("Exiting list::unregister_comparator, return 0");
+  return 0;
+}
+
 static void
-list_sort(list_t *list, generic_comparator_f comparator)
+list_sort(list_t *list)
 {
   /* TODO : Implement another sorting algorithm */
   list_element_t *element;
   void *tmp_data;
 
   print_debug("Entering list::sort");
-  element = list->begin;
+  element = list->_begin;
   while (element && element->_header->next)
     {
-      if (comparator(element->data, element->_header->next->data) < 0)
+      if (list->_comparator(element->data, element->_header->next->data) < 0)
 	{
 	  tmp_data = element->data;
 	  element->data = element->_header->next->data;
 	  element->_header->next->data = tmp_data;
-	  element = list->begin;
+	  element = list->_begin;
 	}
       else
 	{
@@ -307,8 +335,8 @@ list_create(size_t node_size)
       print_debug("Cannot allocate memory for list, return NULL");
       return NULL;
     }
-  list->begin = NULL;
-  list->end = NULL;
+  list->_begin = NULL;
+  list->_end = NULL;
   list->_node_size = node_size;
   list->length = 0;
   list->_deleter = NULL;
@@ -321,6 +349,8 @@ list_create(size_t node_size)
   list->remove = list_remove;
   list->remove_at = list_remove_at;
   list->find = list_find;
+  list->register_comparator = list_register_comparator;
+  list->unregister_comparator = list_unregister_comparator;
   print_debug("Exiting list constructor, return list");
   return list;
 }
@@ -332,7 +362,7 @@ list_delete(list_t *list)
   list_element_t *next;
 
   print_debug("Entering list destructor");
-  element = list->begin;
+  element = list->_begin;
   while (element)
     {
       next = element->_header->next;
