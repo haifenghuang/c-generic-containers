@@ -6,13 +6,34 @@
 #include "containers.h"
 
 #ifdef DEBUG
+# include <stdarg.h>
 static void
 print_debug(char const *s)
 {
   fprintf(stderr, "libcontainers: %s\n", s);
 }
+
+static void
+printf_debug(char const *str, ...)
+{
+  va_list ap;
+  char *s;
+
+  if ((s = malloc(sizeof(*s) + strlen(str) + 2)) == NULL)
+    {
+      return;
+    }
+  strcpy(s, str);
+  s[strlen(str)] = '\n';
+  s[strlen(str) + 1] = 0;
+  va_start(ap, str);
+  vfprintf(stderr, s, ap);
+  va_end(ap);
+  free(s);
+}
 #else
-# define print_debug(s) (void)0
+# define print_debug(s) ((void)0)
+# define printf_debug(args...) ((void)0) 
 #endif
 
 static int
@@ -104,18 +125,18 @@ list_prepend(list_t *list, void const *data)
 }
 
 static size_t
-list_find(list_t *list, void const *el)
+list_find(list_t const *list, void const *el)
 {
   list_element_t *element;
   size_t i = 0;
 
-  print_debug("Entering list::remove");
+  print_debug("Entering list::find");
   element = list->_begin;
   while (element)
     {
       if (list->_comparator(element->data, el) == 0)
 	{
-	  print_debug("Exiting list::remove, return index");
+	  printf_debug("Exiting list::find, return %i", i);
 	  return i;
 	}
       element = element->_header->next;
@@ -324,6 +345,199 @@ list_sort(list_t *list)
   print_debug("Exiting list::sort");
 }
 
+static list_t *
+list_first(list_t const *list, size_t length)
+{
+  list_t *new_list;
+  size_t i;
+  struct _list_element_s *element;
+
+  new_list = list_create(list->_node_size);
+  element = list->_begin;
+  for (i = 0;i < length && i < list->length;++i)
+    {
+      new_list->append(new_list, element->data);
+      element = element->_header->next;
+    }
+  return new_list;
+}
+
+static list_t *
+list_initial(list_t const *list, size_t length)
+{
+  list_t *new_list;
+  size_t i;
+  struct _list_element_s *element;
+
+  new_list = list_create(list->_node_size);
+  element = list->_begin;
+  for (i = 0; i < list->length - length;++i)
+    {
+      new_list->append(new_list, element->data);
+      element = element->_header->next;
+    }
+  return new_list;
+}
+
+static list_t *
+list_last(list_t const *list, size_t length)
+{
+  list_t *new_list;
+  struct _list_element_s *element;
+  size_t i;
+
+  new_list = list_create(list->_node_size);
+  element = list->_end;
+  for (i = 0;i < length; ++i)
+    {
+      new_list->prepend(new_list, element->data);
+      element = element->_header->prev;
+    }
+  return new_list;
+}
+
+static list_t *
+list_rest(list_t const *list, size_t length)
+{
+  list_t *new_list;
+  struct _list_element_s *element;
+  size_t i;
+
+  new_list = list_create(list->_node_size);
+  element = list->_end;
+  for (i = 0;i < list->length - length;++i)
+    {
+      new_list->prepend(new_list, element->data);
+      element = element->_header->prev;
+    }
+  return new_list;
+}
+
+static list_t * const *
+list_partition(list_t const *list, generic_predicate_f predicate)
+{
+  list_t **new_list;
+  struct _list_element_s *element;
+
+  new_list = malloc(sizeof(*new_list) * 2);
+  new_list[0] = list_create(list->_node_size);
+  new_list[1] = list_create(list->_node_size);
+  element = list->_begin;
+  while (element)
+    {
+      if (predicate(element))
+	{
+	  new_list[0]->append(new_list[0], element->data);
+	}
+      else
+	{
+	  new_list[1]->append(new_list[1], element->data);
+	}
+      element = element->_header->next;
+    }
+  return new_list;
+}
+
+static list_t *
+list_concat(list_t const *list1, list_t const *list2)
+{
+  list_t *new_list;
+  struct _list_element_s *element;
+
+  if (list1->_node_size != list2->_node_size)
+    {
+      return NULL;
+    }
+  new_list = list_create(list1->_node_size);
+  element = list1->_begin;
+  while (element)
+    {
+      new_list->append(new_list, element->data);
+      element = element->_header->next;
+    }
+  element = list2->_begin;
+  while (element)
+    {
+      new_list->append(new_list, element->data);
+      element = element->_header->next;
+    }
+  return new_list;
+}
+
+static list_t *
+list_union(list_t const *list1, list_t const *list2)
+{
+  list_t *new_list;
+  struct _list_element_s *element;
+
+  if (list1->_node_size != list2->_node_size)
+    {
+      return NULL;
+    }
+  new_list = list_create(list1->_node_size);
+  element = list1->_begin;
+  while (element)
+    {
+      if (new_list->find(new_list, element->data) == (size_t)-1)
+	{
+	  new_list->append(new_list, element->data);
+	}
+      element = element->_header->next;
+    }
+  element = list2->_begin;
+  while (element)
+    {
+      if (new_list->find(new_list, element->data) == (size_t)-1)
+	{
+	  new_list->append(new_list, element->data);
+	}
+      element = element->_header->next;
+    }
+  return new_list;
+}
+
+static list_t *
+list_intersection(list_t const *list1, list_t const *list2)
+{
+  list_t *new_list;
+  struct _list_element_s *element;
+
+  if (list1->_node_size != list2->_node_size)
+    {
+      return NULL;
+    }
+  new_list = list_create(list1->_node_size);
+  element = list1->_begin;
+  while (element)
+    {
+      if (list2->find(list2, element->data) != (size_t)-1)
+	{
+	  new_list->append(new_list, element->data);
+	}
+      element = element->_header->next;
+    }
+  return new_list;
+}
+
+static list_t *
+list_unique(list_t const *list)
+{
+  list_t *new_list;
+  struct _list_element_s *element;
+
+  new_list = list_create(list->_node_size);
+  element = new_list->_begin;
+  while (element)
+    {
+      if (new_list->find(new_list, element->data) == (size_t)-1)
+	{
+	  new_list->append(new_list, element->data);
+	}
+      element = element->_header->next;
+    }
+  return new_list;
+}
+
 list_t *
 list_create(size_t node_size)
 {
@@ -351,7 +565,7 @@ list_create(size_t node_size)
   list->find = list_find;
   list->register_comparator = list_register_comparator;
   list->unregister_comparator = list_unregister_comparator;
-  print_debug("Exiting list constructor, return list");
+  printf_debug("Exiting list constructor, return %p", list);
   return list;
 }
 

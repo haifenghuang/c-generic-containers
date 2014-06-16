@@ -22,6 +22,7 @@ struct _list_element_s
 typedef void (*generic_deleter_f)(void *);
 typedef int (*list_iterator_f)(size_t, void *, list_t *);
 typedef int (*generic_comparator_f)(void const *, void const *);
+typedef int (*generic_predicate_f)(void const *);
 
 typedef int (*_list_append_f)(list_t *, void const *);
 typedef int (*_list_foreach_f)(list_t *, list_iterator_f);
@@ -33,7 +34,7 @@ typedef void (*_list_sort_f)(list_t *);
 typedef int (*_list_prepend_f)(list_t *, void const *);
 typedef int (*_list_remove_f)(list_t *, void const *);
 typedef int (*_list_remove_at_f)(list_t *, size_t);
-typedef size_t (*_list_find_f)(list_t *list, void const *el);
+typedef size_t (*_list_find_f)(list_t const *list, void const *el);
 
 struct _list_s
 {

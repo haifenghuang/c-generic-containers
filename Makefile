@@ -22,6 +22,7 @@ DEBUG = no
 
 CFLAGS = -Wall -Wextra -Werror -ansi -pedantic
 CFLAGS += -Wold-style-definition -Wcast-qual -Wlogical-op
+CFLAGS += -Wno-variadic-macros
 CFLAGS += -iquote include/ -fPIC
 ifeq ($(DEBUG),yes)
 	CFLAGS += -g -DDEBUG
