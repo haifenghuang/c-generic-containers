@@ -35,6 +35,9 @@ typedef int (*_list_prepend_f)(list_t *, void const *);
 typedef int (*_list_remove_f)(list_t *, void const *);
 typedef int (*_list_remove_at_f)(list_t *, size_t);
 typedef size_t (*_list_find_f)(list_t const *list, void const *el);
+typedef list_t *(*_list_get_f)(list_t const *, size_t);
+typedef list_t * const*(*_list_partition_f)(list_t const *, generic_predicate_f);
+typedef list_t *(*_list_concat_f)(list_t *, list_t const *);
 
 struct _list_s
 {
@@ -42,6 +45,7 @@ struct _list_s
   list_element_t *_begin;
   list_element_t *_end;
   size_t _node_size;
+  char const *_type;
 
   /* Private methods */
   generic_deleter_f _deleter;
@@ -62,12 +66,18 @@ struct _list_s
   _list_find_f find;
   _list_register_comparator_f register_comparator;
   _list_unregister_comparator_f unregister_comparator;
+  _list_get_f first;
+  _list_get_f initial;
+  _list_get_f last;
+  _list_get_f rest;
+  _list_partition_f partition;
+  _list_concat_f concat;
 };
 
-# define new_list(x) list_create(sizeof(x))
+# define new_list(x) list_create(sizeof(x), #x)
 # define delete_list(x) list_delete(x)
 typedef list_t *list;
-list_t *list_create(size_t);
+list_t *list_create(size_t, char const *);
 void list_delete(list_t *);
 
 #endif

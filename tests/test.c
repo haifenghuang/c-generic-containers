@@ -21,12 +21,13 @@ int
 main (void)
 {
   list l;
-  int i; 
+  int i;
 
   if ((l = new_list(int)) == NULL)
     {
       return 1;
     }
+  printf("%s\n", l->_type);
   l->register_comparator(l, comparator);
   i = 0;
   l->append(l, &i);
