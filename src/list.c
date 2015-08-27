@@ -1,40 +1,6 @@
-#ifdef DEBUG
-# include <stdio.h>
-#endif
 #include <assert.h>
 #include <string.h>
-#include "containers.h"
-
-#ifdef DEBUG
-# include <stdarg.h>
-static void
-print_debug(char const *s)
-{
-  fprintf(stderr, "libcontainers: %s\n", s);
-}
-
-static void
-printf_debug(char const *str, ...)
-{
-  va_list ap;
-  char *s;
-
-  if ((s = malloc(sizeof(*s) + strlen(str) + 2)) == NULL)
-    {
-      return;
-    }
-  strcpy(s, str);
-  s[strlen(str)] = '\n';
-  s[strlen(str) + 1] = 0;
-  va_start(ap, str);
-  vfprintf(stderr, s, ap);
-  va_end(ap);
-  free(s);
-}
-#else
-# define print_debug(s) ((void)0)
-# define printf_debug(args...) ((void)0) 
-#endif
+#include "libcontainers/containers.h"
 
 static int
 list_append(list_t *list, void const *data)

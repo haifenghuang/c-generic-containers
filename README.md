@@ -13,8 +13,3 @@ List of objects not implemented yet :
 * stack
 * string
 * queue
-
-Objects that are not containers which may be implemented :
-* thread
-* listeners (an implementation of events with callback functions in a separate thread)
-
